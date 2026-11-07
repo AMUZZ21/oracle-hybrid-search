@@ -152,4 +152,9 @@ hybrid_search/
 tests/                   28 tests, all offline (stand-in encoders)
 Dockerfile
 ```
+## Research & Benchmark Results
+
+See [Benchmark Report](README_BENCHMARK.md)
+for experimental methodology, evaluation metrics,
+statistical testing and SciFact results.
 
