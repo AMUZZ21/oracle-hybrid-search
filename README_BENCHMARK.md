@@ -47,7 +47,7 @@ The plot below is included here as a detailed experimental artifact. The
 dense-weight parameter α ranges from 0 (BM25-only endpoint) to 1 (dense-only
 endpoint).
 
-![SciFact retrieval quality comparison and linear-fusion weight sweep](assets/benchmark-results.png)
+![SciFact retrieval quality comparison and linear-fusion weight sweep](assests/benchmark-results.png)
 
 | Dense weight α | nDCG@10 |
 |---:|---:|
