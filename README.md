@@ -77,19 +77,37 @@ docker build -t hybrid-search --build-arg CORPUS=scifact .   # or with the real 
 docker run -p 7860:7860 hybrid-search                        # http://localhost:7860
 ```
 
-### Option B. Hugging Face Spaces (free CPU, enough RAM for the models)
+### Option B. Public link from your own computer (free, no account, good for demos)
 
-1. Create a new Space at huggingface.co/new-space and choose **Docker** as the SDK.
-2. Clone the Space, then copy this project's files into it.
-3. Add this block at the very top of the Space's `README.md`:
-   ```
-   ---
-   title: Hybrid Search Lab
-   sdk: docker
-   app_port: 7860
-   ---
-   ```
-4. Commit and push. The Space builds the Dockerfile and serves the app.
+```bash
+python serve.py                                   # terminal 1
+cloudflared tunnel --url http://localhost:8000    # terminal 2: prints a public https://....trycloudflare.com link
+```
+
+The link works only while both commands are running.
+
+### Option C. Google Cloud Run (always-on URL, scales to zero)
+
+```bash
+gcloud run deploy hybrid-search --source . --region us-central1 \
+  --memory 2Gi --cpu 2 --min-instances 0 --max-instances 1 --cpu-boost --allow-unauthenticated
+```
+
+Needs a Google Cloud project with billing enabled. Usage inside the monthly free allowance is not charged. Keep `--min-instances 0` (an always-on instance would exceed the free allowance). The first request after idle is slow while the models load. Use the demo corpus here: building SciFact embeddings inside Cloud Build may exceed its build timeout.
+
+### Option D. Hugging Face Spaces (Docker)
+
+Per Hugging Face's current docs, creating a Docker Space needs a paid plan (PRO for personal accounts). Free CPU Spaces (2 vCPU, 16 GB RAM) sleep when idle. If you have a plan: create a Space with the **Docker** SDK, copy this project into it, and put this at the very top of the Space's `README.md`:
+
+```
+---
+title: Hybrid Search Lab
+sdk: docker
+app_port: 7860
+---
+```
+
+Then commit and push; the Space builds the Dockerfile and serves the app.
 
 ### Memory notes
 
@@ -134,3 +152,4 @@ hybrid_search/
 tests/                   28 tests, all offline (stand-in encoders)
 Dockerfile
 ```
+
