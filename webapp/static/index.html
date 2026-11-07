@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Hybrid Search Lab</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 24'%3E%3Cpath d='M4 5C16 5 16 19 28 19' fill='none' stroke='%239A5B0A' stroke-width='3' stroke-linecap='round'/%3E%3Cpath d='M4 19C16 19 16 5 28 5' fill='none' stroke='%231F5FA6' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4F6F8; --surface:#FFFFFF; --ink:#14202C; --muted:#566475; --faint:#8593A3;
+  --line:#D9E0E7; --line-strong:#AEBAC6; --focus:#1D4ED8; --hit:#F2C200;
+  --kw:#9A5B0A; --dn:#1F5FA6; --hy:#6B3FB0; --rr:#14804F; --down:#B3402A;
+  --sans:"Bricolage Grotesque",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0F161D; --surface:#17212B; --ink:#E7EDF3; --muted:#9DABBA; --faint:#6F7F90;
+    --line:#26333F; --line-strong:#445566; --focus:#7AA2F7;
+    --kw:#E0A24B; --dn:#6FA8E8; --hy:#AB8DE6; --rr:#4CC38A; --down:#F08A72;
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;font-variant-numeric:tabular-nums}
+.shell{max-width:1240px;margin:0 auto;padding:0 24px 64px}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+button{font:inherit;color:inherit}
+.kw{--c:var(--kw)} .dn{--c:var(--dn)} .hy{--c:var(--hy)} .rr{--c:var(--rr)}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--c);flex:none}
+
+/* header */
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:20px 0}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.1rem;letter-spacing:-.01em}
+.brand svg{width:32px;height:24px}
+.status{display:flex;align-items:center;gap:18px;flex-wrap:wrap;color:var(--muted);font-size:.875rem}
+.cap{display:inline-flex;align-items:center;gap:6px}
+.cap .dot{background:var(--c)}
+.cap.off .dot{background:transparent;box-shadow:inset 0 0 0 1.5px var(--faint)}
+.cap.off{color:var(--faint)}
+
+/* hero + search */
+.hero{padding:28px 0 8px}
+.hero h1{margin:0 0 8px;font-size:clamp(1.9rem,4.4vw,3rem);line-height:1.05;letter-spacing:-.025em;font-weight:700;max-width:18ch}
+.hero p{margin:0 0 22px;color:var(--muted);max-width:56ch;font-size:1.05rem}
+.search{display:flex;align-items:center;gap:8px;background:var(--surface);border:1.5px solid var(--ink);border-radius:14px;padding:6px 6px 6px 18px}
+.search:focus-within{outline:3px solid var(--focus);outline-offset:2px}
+.search input{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font:500 clamp(1.1rem,2.4vw,1.45rem)/1.3 var(--sans);padding:10px 0}
+.search input:focus{outline:none}
+.search input::placeholder{color:var(--faint);font-weight:400}
+.search kbd{font:500 .75rem var(--sans);color:var(--muted);border:1px solid var(--line-strong);border-radius:5px;padding:1px 7px}
+.go{background:var(--ink);color:var(--bg);border:0;border-radius:9px;padding:12px 24px;font-weight:600;cursor:pointer}
+.go:hover{filter:brightness(1.15)}
+.examples{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:14px 0 0;color:var(--muted);font-size:.9rem}
+.chip{background:transparent;border:1px solid var(--line-strong);border-radius:999px;padding:4px 12px;cursor:pointer;color:var(--ink)}
+.chip:hover{border-color:var(--ink)}
+
+/* controls */
+.controls{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:26px}
+.seg{position:relative;display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:3px}
+.seg label{position:relative;cursor:pointer}
+.seg input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.seg span{display:block;padding:7px 14px;border-radius:7px;font-weight:500;color:var(--muted)}
+.seg input:checked + span{background:var(--ink);color:var(--bg)}
+.seg input:focus-visible + span{outline:2px solid var(--focus);outline-offset:2px}
+.seg input:disabled + span{opacity:.45;cursor:not-allowed}
+.linkbtn{background:none;border:0;padding:6px 2px;color:var(--muted);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.linkbtn:hover{color:var(--ink)}
+.settings{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px 28px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-top:12px}
+.settings[hidden]{display:none}
+.field label{display:block;font-weight:600;margin-bottom:2px}
+.field small{display:block;color:var(--muted);margin-bottom:8px;line-height:1.35}
+.field input[type=number],.field select{width:100%;padding:7px 10px;border:1px solid var(--line-strong);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
+.field input[type=range]{width:100%;accent-color:var(--hy)}
+.field output{font-weight:600}
+
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-top:18px;overflow-x:auto}
+.tab{display:flex;align-items:center;gap:8px;background:none;border:0;border-bottom:3px solid transparent;margin-bottom:-1px;padding:10px 14px;font-weight:500;color:var(--muted);cursor:pointer;white-space:nowrap}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected=true]{color:var(--ink);border-bottom-color:var(--c)}
+.tab[aria-disabled=true]{opacity:.45;cursor:not-allowed}
+.hint{margin:18px 0 0;color:var(--muted);max-width:70ch}
+.notice{margin:14px 0 0;padding:10px 14px;border-left:3px solid var(--kw);background:var(--surface);color:var(--muted);font-size:.9rem;border-radius:0 8px 8px 0}
+.notice code{font:inherit;font-weight:600;color:var(--ink)}
+
+/* results (single view) */
+#out{margin-top:22px;transition:opacity .15s}
+#out[aria-busy=true]{opacity:.5}
+.rhead,.stages,.results{max-width:1000px}
+.rhead{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.count{margin:0;font-size:1.05rem;font-weight:600}
+.timing{margin:0;color:var(--muted);font-size:.9rem}
+.timing strong{color:var(--ink);font-weight:600}
+.stages{margin:2px 0 10px;color:var(--faint);font-size:.85rem}
+.results{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.result{display:grid;grid-template-columns:48px minmax(0,1fr) 96px;gap:4px 14px;padding:18px 6px;border-bottom:1px solid var(--line)}
+.rank{font-size:1.5rem;font-weight:700;line-height:1.1;color:var(--c);text-align:right;padding-top:2px}
+.title{margin:0;font-size:1.15rem;font-weight:600;line-height:1.3;letter-spacing:-.005em}
+.snippet{margin:6px 0 0;font-family:var(--serif);font-size:1.02rem;line-height:1.62;color:var(--ink);max-width:72ch}
+mark{background:color-mix(in srgb,var(--hit) 38%,transparent);color:inherit;border-radius:2px;padding:0 1px}
+.meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;margin-top:10px;font-size:.85rem;color:var(--muted)}
+.prov{display:inline-flex;align-items:center;gap:6px}
+.prov.miss{color:var(--faint)}
+.move{font-weight:600}
+.move.up{color:var(--rr)} .move.down{color:var(--down)} .move.same{color:var(--muted);font-weight:500}
+.more{background:none;border:0;padding:0;color:var(--muted);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.more:hover{color:var(--ink)}
+.score{text-align:right}
+.score .num{display:block;font-size:1.1rem;font-weight:600}
+.score .lbl{display:block;color:var(--faint);font-size:.78rem;line-height:1.2}
+
+/* compare view: the rank ribbons */
+.cmp-wrap{overflow-x:auto;padding:2px 2px 12px;margin:0 -2px}
+.compare{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);column-gap:64px;min-width:calc(var(--n) * 250px + (var(--n) - 1) * 64px)}
+.ribbons{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.rib{fill:none;stroke:var(--line-strong);stroke-width:1.5;transition:opacity .12s,stroke .12s}
+.col{min-width:0}
+.chead{padding-bottom:10px;margin-bottom:12px;border-bottom:3px solid var(--c)}
+.chead .row1{display:flex;align-items:center;gap:8px;justify-content:space-between}
+.chead h3{margin:0;font-size:1.05rem;font-weight:700;display:flex;align-items:center;gap:8px}
+.chead .ms{color:var(--muted);font-size:.85rem}
+.chead p{margin:4px 0 0;color:var(--muted);font-size:.85rem;line-height:1.35;min-height:2.7em}
+.crow{display:flex;align-items:center;gap:10px;width:100%;height:60px;margin:0 0 8px;padding:0 12px;text-align:left;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--c);border-radius:8px;cursor:pointer;transition:opacity .12s,border-color .12s}
+.crow .n{flex:none;width:1.4em;color:var(--muted);font-weight:600;font-size:.85rem;text-align:right}
+.crow .t{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-weight:500;line-height:1.3;font-size:.92rem}
+.has-hl .crow{opacity:.45}
+.has-hl .crow.hl{opacity:1;border-color:var(--ink);border-left-color:var(--c)}
+.has-hl .rib{opacity:.18}
+.has-hl .rib.hl{opacity:1;stroke:var(--ink);stroke-width:2.5}
+.empty-col{color:var(--muted);font-size:.9rem;padding:8px 2px}
+
+/* empty / error */
+.guide{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:28px;margin:34px 0 0;padding:0}
+.guide div{border-top:3px solid var(--c);padding-top:12px}
+.guide dt{display:flex;align-items:center;gap:8px;font-weight:700;margin-bottom:6px}
+.guide dd{margin:0;color:var(--muted);line-height:1.5}
+.guide-foot{margin:26px 0 0;color:var(--muted);max-width:70ch}
+.state{padding:36px 0;max-width:60ch}
+.state h2{margin:0 0 6px;font-size:1.2rem}
+.state p{margin:0 0 14px;color:var(--muted)}
+.btn{background:var(--surface);border:1px solid var(--ink);border-radius:9px;padding:8px 16px;font-weight:600;cursor:pointer}
+.btn:hover{background:var(--ink);color:var(--bg)}
+
+dialog{border:1px solid var(--line);border-radius:14px;max-width:660px;width:calc(100% - 32px);padding:0;background:var(--surface);color:var(--ink)}
+dialog::backdrop{background:rgba(8,16,24,.5)}
+.dlg{padding:22px 24px 24px}
+.dlg h2{margin:0 0 2px;font-size:1.3rem;line-height:1.25}
+.dlg .id{color:var(--faint);font-size:.82rem;margin:0 0 12px}
+.dlg .snippet{max-width:none}
+.ranks{width:100%;border-collapse:collapse;margin-top:16px;font-size:.9rem}
+.ranks th{text-align:left;font-weight:500;color:var(--muted);padding:6px 0;border-bottom:1px solid var(--line)}
+.ranks td{padding:6px 0;border-bottom:1px solid var(--line)}
+.ranks td:last-child,.ranks th:last-child{text-align:right}
+.dlg .close{margin-top:18px}
+
+footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);color:var(--faint);font-size:.85rem;display:flex;flex-wrap:wrap;gap:6px 28px}
+
+@media (max-width:640px){
+  .shell{padding:0 16px 48px}
+  .search kbd{display:none}
+  .go{padding:12px 16px}
+  .result{grid-template-columns:30px minmax(0,1fr);}
+  .score{grid-column:2;text-align:left;display:flex;gap:6px;align-items:baseline}
+  .score .num{font-size:.95rem}
+  .rank{font-size:1.15rem}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 32 24" aria-hidden="true"><path d="M4 5C16 5 16 19 28 19" fill="none" stroke="var(--kw)" stroke-width="3" stroke-linecap="round"/><path d="M4 19C16 19 16 5 28 5" fill="none" stroke="var(--dn)" stroke-width="3" stroke-linecap="round"/></svg>
+      Hybrid Search Lab
+    </div>
+    <div class="status" id="status" aria-live="polite"></div>
+  </header>
+
+  <section class="hero" id="hero">
+    <h1>Same query, different rankings.</h1>
+    <p>Run one search through keyword, meaning, hybrid and reranked retrieval, and see where each method puts every document.</p>
+  </section>
+
+  <form class="search" id="form" role="search" autocomplete="off">
+    <input id="q" type="search" name="q" maxlength="500" aria-label="Search query" placeholder="Search the documents" enterkeyhint="search">
+    <kbd title="Press / to focus the search box">/</kbd>
+    <button class="go" type="submit">Search</button>
+  </form>
+  <p class="examples" id="examples" hidden></p>
+
+  <div class="controls">
+    <div class="seg" role="radiogroup" aria-label="View">
+      <label><input type="radio" name="view" value="single" checked><span>One method</span></label>
+      <label><input type="radio" name="view" value="compare"><span>Compare methods</span></label>
+    </div>
+    <button class="linkbtn" id="settingsBtn" type="button" aria-expanded="false" aria-controls="settings">Settings</button>
+  </div>
+
+  <section class="settings" id="settings" hidden>
+    <div class="field"><label for="k">Results shown</label><small>How many documents to list per method.</small>
+      <select id="k"><option>5</option><option selected>10</option><option>20</option></select></div>
+    <div class="field"><label for="alpha">Meaning weight: <output id="alphaOut">0.50</output></label><small>Hybrid (weighted) only. 0 is all keyword, 1 is all meaning.</small>
+      <input id="alpha" type="range" min="0" max="1" step="0.05" value="0.5"></div>
+    <div class="field"><label for="rrfk">RRF constant</label><small>Hybrid (RRF) only. Higher values flatten the gap between ranks.</small>
+      <input id="rrfk" type="number" min="1" max="1000" value="60"></div>
+    <div class="field"><label for="depth">Rerank depth</label><small>How many hybrid results the cross-encoder re-reads.</small>
+      <input id="depth" type="number" min="5" max="200" value="30"></div>
+  </section>
+
+  <div id="notice"></div>
+  <div id="tabsHost"></div>
+
+  <main id="out" aria-live="polite"></main>
+
+  <footer id="foot"></footer>
+</div>
+
+<dialog id="detail" aria-labelledby="dTitle"><div class="dlg" id="dBody"></div></dialog>
+
+<script>
+"use strict";
+const $ = (s, el = document) => el.querySelector(s);
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const METHOD = {
+  bm25:          { short: "Keyword",         cls: "kw" },
+  dense:         { short: "Meaning",         cls: "dn" },
+  hybrid_rrf:    { short: "Hybrid",          cls: "hy" },
+  hybrid_linear: { short: "Hybrid",          cls: "hy" },
+  hybrid_rerank: { short: "Hybrid + rerank", cls: "rr" },
+};
+const STAGE = { bm25: "keyword", dense: "meaning", fusion: "fusion", rerank: "rerank" };
+const STOP = new Set("a an and are as at be by for from has have in is it its of on or that the to was were with this these those not but if than then so such can how why what do does".split(" "));
+
+const state = { info: null, q: "", view: "single", mode: "hybrid_rrf", data: null, ctl: null };
+
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmtMs = x => `${x < 10 ? x.toFixed(1) : Math.round(x)} ms`;
+const fmtScore = s => s == null ? "none" : (Math.abs(s) >= 10 ? s.toFixed(1) : Math.abs(s) >= 1 ? s.toFixed(2) : s.toFixed(3));
+
+function termsRe(q) {
+  const words = [...new Set((q.toLowerCase().match(/[a-z0-9]+/g) || []).filter(w => w.length >= 3 && !STOP.has(w)))];
+  if (!words.length) return null;
+  const parts = words.map(w => w.length >= 5 ? `\\b${w.slice(0, w.length - 2)}\\w*` : `\\b${w}(?:s|es)?\\b`);
+  return new RegExp(parts.join("|"), "gi");
+}
+function hl(text, re) {
+  if (!re) return esc(text);
+  let out = "", last = 0;
+  text.replace(re, (m, off) => { out += esc(text.slice(last, off)) + "<mark>" + esc(m) + "</mark>"; last = off + m.length; return m; });
+  return out + esc(text.slice(last));
+}
+function snip(text, max = 300) {
+  if (text.length <= max) return text;
+  const cut = text.lastIndexOf(" ", max);
+  return text.slice(0, cut > 0 ? cut : max) + "…";
+}
+
+/* ---------- header, examples, tabs ---------- */
+function renderStatus() {
+  const i = state.info, c = i.capabilities;
+  const name = i.corpus === "demo" ? "Demo corpus" : i.corpus;
+  const cap = (on, cls, label, why) => `<span class="cap ${cls} ${on ? "" : "off"}" title="${esc(on ? "" : why || "Not available")}"><span class="dot"></span>${label}</span>`;
+  $("#status").innerHTML =
+    `<span>${esc(name)}, ${i.n_docs.toLocaleString()} documents</span>` +
+    cap(c.bm25, "kw", "Keyword") + cap(c.dense, "dn", "Meaning", i.unavailable.dense) + cap(c.rerank, "rr", "Reranker", i.unavailable.rerank);
+  $("#q").placeholder = `Search ${i.n_docs.toLocaleString()} documents`;
+  const ex = $("#examples");
+  if (i.examples.length) {
+    ex.hidden = false;
+    ex.innerHTML = `Try ` + i.examples.map(t => `<button type="button" class="chip">${esc(t)}</button>`).join("");
+  }
+  const why = [i.unavailable.dense, i.unavailable.rerank].filter(Boolean);
+  $("#notice").innerHTML = why.length && !c.dense
+    ? `<p class="notice">Only keyword search is running. ${esc(why[0])} Install <code>sentence-transformers</code> and restart to turn on the other methods.</p>`
+    : (!c.rerank && i.unavailable.rerank ? `<p class="notice">${esc(i.unavailable.rerank)}</p>` : "");
+  const f = [];
+  if (i.dense_model) f.push(`Meaning model: ${esc(i.dense_model)}`);
+  if (i.rerank_model) f.push(`Reranker: ${esc(i.rerank_model)}`);
+  f.push("Rankings use the same code as the benchmark in run_experiment.py.");
+  $("#foot").innerHTML = f.map(x => `<span>${x}</span>`).join("");
+  const cmpOk = i.compare_modes.length > 1;
+  const cmp = $('input[value="compare"]');
+  cmp.disabled = !cmpOk;
+  cmp.parentElement.title = cmpOk ? "" : "Needs at least two methods. Turn on dense search to compare.";
+}
+
+function renderTabs() {
+  const host = $("#tabsHost");
+  if (state.view === "compare") {
+    host.innerHTML = `<p class="hint">Each row is one rank. Point at a document to follow it across the methods, or select it to see its full text.</p>`;
+    return;
+  }
+  host.innerHTML = `<div class="tabs" role="tablist" aria-label="Retrieval method">` +
+    state.info.modes.map(m => {
+      const cls = METHOD[m.id].cls, sel = m.id === state.mode;
+      const tip = m.available ? "" : (m.id === "hybrid_rerank" ? state.info.unavailable.rerank : state.info.unavailable.dense) || "Not available";
+      return `<button class="tab ${cls}" role="tab" id="tab-${m.id}" data-mode="${m.id}" aria-selected="${sel}" ${m.available ? "" : 'aria-disabled="true"'} tabindex="${sel ? 0 : -1}" title="${esc(tip)}"><span class="dot"></span>${esc(m.label)}</button>`;
+    }).join("") + `</div>`;
+}
+
+/* ---------- search ---------- */
+function settings() {
+  return { k: $("#k").value, alpha: $("#alpha").value, rrf_k: $("#rrfk").value || 60, rerank_depth: $("#depth").value || 30 };
+}
+function syncUrl() {
+  const p = new URLSearchParams();
+  if (state.q) p.set("q", state.q);
+  if (state.view !== "single") p.set("view", state.view);
+  if (state.mode !== "hybrid_rrf") p.set("mode", state.mode);
+  history.replaceState(null, "", p.toString() ? "?" + p : location.pathname);
+}
+function busy(on) { $("#out").setAttribute("aria-busy", on ? "true" : "false"); }
+
+async function run() {
+  const q = state.q.trim();
+  if (!q) return;
+  syncUrl();
+  state.ctl?.abort();
+  const ctl = state.ctl = new AbortController();
+  busy(true);
+  const p = new URLSearchParams({ q, ...settings() });
+  let url = "/api/compare?" + p;
+  if (state.view === "single") { p.set("mode", state.mode); url = "/api/search?" + p; }
+  try {
+    const res = await fetch(url, { signal: ctl.signal });
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      throw new Error(typeof j.detail === "string" ? j.detail : "The server rejected that query. Shorten it and try again.");
+    }
+    state.data = await res.json();
+    $("#hero").hidden = true;
+    render();
+  } catch (e) {
+    if (e.name === "AbortError") return;
+    const net = e instanceof TypeError;
+    $("#out").innerHTML = `<div class="state"><h2>${net ? "Can't reach the search server" : "Search failed"}</h2>
+      <p>${net ? "Check that it's still running, then try again." : esc(e.message)}</p>
+      <button class="btn" id="retry" type="button">Try again</button></div>`;
+  } finally {
+    if (state.ctl === ctl) busy(false);
+  }
+}
+
+/* ---------- rendering ---------- */
+function render() {
+  renderTabs();
+  if (!state.data) return renderGuide();
+  state.view === "compare" ? renderCompare(state.data) : renderSingle(state.data);
+}
+
+function renderGuide() {
+  $("#out").innerHTML = `<dl class="guide">
+    <div class="kw"><dt><span class="dot"></span>Keyword (BM25)</dt><dd>Scores documents by how often, and how rarely, your words appear. Strong on exact terms such as gene names. Blind to synonyms.</dd></div>
+    <div class="dn"><dt><span class="dot"></span>Meaning (dense)</dt><dd>Turns the query and every document into vectors and compares them. Finds "myocardial infarction" for "heart attack". Can miss exact identifiers.</dd></div>
+    <div class="hy"><dt><span class="dot"></span>Hybrid</dt><dd>Merges the keyword and meaning rankings, so documents both methods like rise to the top.</dd></div>
+    <div class="rr"><dt><span class="dot"></span>Hybrid + rerank</dt><dd>A cross-encoder reads the query together with each top result and reorders them. The slowest step, and usually the most accurate.</dd></div>
+  </dl>
+  <p class="guide-foot">Choose <strong>Compare methods</strong> to see all four rankings side by side, with a line joining each document across them.</p>`;
+}
+
+function provenance(r, mode) {
+  const kw = r.bm25_rank ? `<span class="prov kw"><span class="dot"></span>Keyword #${r.bm25_rank}</span>` : `<span class="prov kw miss"><span class="dot"></span>Keyword: not retrieved</span>`;
+  const dn = r.dense_rank ? `<span class="prov dn"><span class="dot"></span>Meaning #${r.dense_rank}</span>` : `<span class="prov dn miss"><span class="dot"></span>Meaning: not retrieved</span>`;
+  let out = "";
+  if (mode === "dense") out = kw;
+  else if (mode !== "bm25") out = kw + dn;
+  if (mode === "hybrid_rerank" && r.rank_before != null) {
+    const d = r.rank_before - r.rank;
+    out += d > 0 ? `<span class="move up">▲ ${d} from hybrid</span>` : d < 0 ? `<span class="move down">▼ ${-d} from hybrid</span>` : `<span class="move same">Same as hybrid</span>`;
+  }
+  return out;
+}
+
+function renderSingle(d) {
+  const re = termsRe(d.query), cls = METHOD[d.mode].cls, n = d.results.length;
+  const stages = Object.entries(d.stages);
+  let html = `<div class="rhead"><h2 class="count">${n} result${n === 1 ? "" : "s"} for “${esc(d.query)}”</h2>
+    <p class="timing"><strong>${esc(d.label)}</strong> in ${fmtMs(d.ms)}</p></div>`;
+  if (stages.length > 1) html += `<p class="stages">${stages.map(([k, v]) => `${STAGE[k] || k} ${fmtMs(v)}`).join(", ")}</p>`;
+  if (!n) {
+    html += `<div class="state"><h2>No documents matched</h2><p>${d.mode === "bm25"
+      ? "Keyword search needs at least one word in common with a document. Try a different word, or switch to Meaning or Hybrid."
+      : "Try a different query."}</p></div>`;
+    $("#out").innerHTML = html; return;
+  }
+  html += `<ol class="results ${cls}">` + d.results.map((r, i) => {
+    const long = r.text.length > 300;
+    return `<li class="result ${cls}">
+      <div class="rank" aria-label="Rank ${r.rank}">${r.rank}</div>
+      <div>
+        <h3 class="title">${hl(r.title, re)}</h3>
+        <p class="snippet" data-i="${i}">${hl(snip(r.text), re)}</p>
+        <div class="meta">${provenance(r, d.mode)}${long ? `<button class="more" type="button" data-i="${i}" aria-expanded="false">Show full text</button>` : ""}</div>
+      </div>
+      <div class="score"><span class="num">${fmtScore(r.score)}</span><span class="lbl">${esc(d.score_label)}</span></div>
+    </li>`;
+  }).join("") + `</ol>`;
+  $("#out").innerHTML = html;
+}
+
+const CAPTION = {
+  bm25: () => "Matches the words you typed.",
+  dense: () => "Matches ideas, even in other words.",
+  hybrid_rrf: () => "Merges the keyword and meaning rankings.",
+  hybrid_rerank: () => `Re-reads the top ${settings().rerank_depth} with a cross-encoder.`,
+};
+
+function renderCompare(d) {
+  const re = termsRe(d.query);
+  const cols = d.columns;
+  $("#out").innerHTML = `<div class="rhead"><h2 class="count">Top ${d.k} for “${esc(d.query)}” by method</h2></div>
+    <div class="cmp-wrap" style="margin-top:14px"><div class="compare" style="--n:${cols.length}">
+    <svg class="ribbons" aria-hidden="true"></svg>` +
+    cols.map(c => {
+      const cls = METHOD[c.mode].cls;
+      return `<section class="col ${cls}" aria-label="${esc(c.label)}">
+        <header class="chead"><div class="row1"><h3><span class="dot"></span>${esc(METHOD[c.mode].short)}</h3><span class="ms">${fmtMs(c.ms)}</span></div><p>${CAPTION[c.mode]()}</p></header>
+        ${c.results.length ? c.results.map(r => `<button type="button" class="crow" data-doc="${esc(r.doc_id)}" data-mode="${c.mode}"><span class="n">${r.rank}</span><span class="t">${esc(r.title)}</span></button>`).join("")
+          : `<p class="empty-col">No documents shared a word with the query.</p>`}
+      </section>`;
+    }).join("") + `</div></div>`;
+  drawRibbons(true);
+  watch($(".compare"));
+}
+
+let ro;
+function watch(el) { ro?.disconnect(); ro = new ResizeObserver(() => drawRibbons(false)); ro.observe(el); }
+
+function drawRibbons(animate) {
+  const c = $(".compare"); if (!c) return;
+  const svg = $(".ribbons", c), cr = c.getBoundingClientRect();
+  const cols = [...c.querySelectorAll(".col")];
+  let html = "";
+  for (let i = 0; i < cols.length - 1; i++) {
+    const left = new Map([...cols[i].querySelectorAll(".crow")].map(el => [el.dataset.doc, el]));
+    for (const b of cols[i + 1].querySelectorAll(".crow")) {
+      const a = left.get(b.dataset.doc); if (!a) continue;
+      const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+      const x1 = ra.right - cr.left, y1 = ra.top + ra.height / 2 - cr.top;
+      const x2 = rb.left - cr.left, y2 = rb.top + rb.height / 2 - cr.top, xm = (x1 + x2) / 2;
+      html += `<path class="rib" data-doc="${esc(b.dataset.doc)}" d="M${x1} ${y1}C${xm} ${y1} ${xm} ${y2} ${x2} ${y2}"/>`;
+    }
+  }
+  svg.innerHTML = html;
+  if (animate && !reduced) {
+    svg.querySelectorAll("path").forEach((p, i) => {
+      const L = p.getTotalLength();
+      p.style.strokeDasharray = L; p.style.strokeDashoffset = L;
+      p.getBoundingClientRect();
+      p.style.transition = `stroke-dashoffset .7s ease ${Math.min(i * 14, 420)}ms`;
+      p.style.strokeDashoffset = 0;
+    });
+  }
+}
+
+function follow(id) {
+  const c = $(".compare"); if (!c) return;
+  c.classList.toggle("has-hl", id != null);
+  c.querySelectorAll(".crow, .rib").forEach(el => el.classList.toggle("hl", id != null && el.dataset.doc === id));
+}
+
+function openDetail(id) {
+  const d = state.data, re = termsRe(d.query);
+  let doc = null; const rows = [];
+  for (const c of d.columns) {
+    const r = c.results.find(x => x.doc_id === id);
+    if (r && !doc) doc = r;
+    rows.push(`<tr><td><span class="prov ${METHOD[c.mode].cls}"><span class="dot"></span>${esc(METHOD[c.mode].short)}</span></td><td>${r ? "#" + r.rank : `Not in top ${d.k}`}</td></tr>`);
+  }
+  $("#dBody").innerHTML = `<h2 id="dTitle">${hl(doc.title, re)}</h2><p class="id">${esc(doc.doc_id)}</p>
+    <p class="snippet">${hl(doc.text, re)}</p>
+    <table class="ranks"><thead><tr><th>Method</th><th>Rank</th></tr></thead><tbody>${rows.join("")}</tbody></table>
+    <button class="btn close" type="button">Close</button>`;
+  $("#detail").showModal();
+}
+
+/* ---------- events ---------- */
+$("#form").addEventListener("submit", e => { e.preventDefault(); state.q = $("#q").value; run(); });
+
+document.addEventListener("click", e => {
+  const t = e.target;
+  const chip = t.closest(".chip");
+  if (chip) { $("#q").value = chip.textContent; state.q = chip.textContent; run(); return; }
+  const tab = t.closest(".tab");
+  if (tab && tab.getAttribute("aria-disabled") !== "true") { state.mode = tab.dataset.mode; renderTabs(); $("#tab-" + state.mode).focus(); if (state.q) run(); else syncUrl(); return; }
+  const more = t.closest(".more");
+  if (more) {
+    const i = +more.dataset.i, p = $(`.snippet[data-i="${i}"]`), open = more.getAttribute("aria-expanded") === "true";
+    const r = state.data.results[i], re = termsRe(state.data.query);
+    p.innerHTML = hl(open ? snip(r.text) : r.text, re);
+    more.setAttribute("aria-expanded", String(!open)); more.textContent = open ? "Show full text" : "Show less";
+    return;
+  }
+  const row = t.closest(".crow");
+  if (row) { openDetail(row.dataset.doc); return; }
+  if (t.closest("#retry")) { run(); return; }
+  if (t.closest("#detail .close") || t === $("#detail")) $("#detail").close();
+});
+
+document.addEventListener("keydown", e => {
+  if (e.key === "/" && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) { e.preventDefault(); $("#q").focus(); $("#q").select(); }
+  const tab = e.target.closest?.(".tab");
+  if (tab && (e.key === "ArrowRight" || e.key === "ArrowLeft")) {
+    const tabs = [...document.querySelectorAll('.tab:not([aria-disabled="true"])')];
+    const j = (tabs.indexOf(tab) + (e.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+    tabs[j].click(); e.preventDefault();
+  }
+});
+
+for (const sel of ["mouseover", "focusin"]) document.addEventListener(sel, e => { const r = e.target.closest?.(".crow"); if (r) follow(r.dataset.doc); });
+for (const sel of ["mouseout", "focusout"]) document.addEventListener(sel, e => { if (e.target.closest?.(".crow")) follow(null); });
+
+document.querySelectorAll('input[name="view"]').forEach(r => r.addEventListener("change", () => {
+  state.view = r.value; state.data = null; render(); if (state.q) run(); else syncUrl();
+}));
+$("#settingsBtn").addEventListener("click", e => {
+  const s = $("#settings"), open = s.hidden;
+  s.hidden = !open; e.currentTarget.setAttribute("aria-expanded", String(open));
+});
+$("#alpha").addEventListener("input", e => { $("#alphaOut").textContent = (+e.target.value).toFixed(2); });
+for (const id of ["k", "alpha", "rrfk", "depth"]) $("#" + id).addEventListener("change", () => { if (state.q) run(); });
+
+/* ---------- boot ---------- */
+(async function init() {
+  const p = new URLSearchParams(location.search);
+  state.q = p.get("q") || "";
+  if (p.get("view") === "compare") state.view = "compare";
+  if (["bm25", "dense", "hybrid_rrf", "hybrid_linear", "hybrid_rerank"].includes(p.get("mode"))) state.mode = p.get("mode");
+  try {
+    const res = await fetch("/api/info");
+    if (!res.ok) throw new Error();
+    state.info = await res.json();
+  } catch {
+    $("#out").innerHTML = `<div class="state"><h2>Can't reach the search server</h2><p>Start it with <code>python serve.py</code>, then reload this page.</p></div>`;
+    return;
+  }
+  const i = state.info, mode = i.modes.find(m => m.id === state.mode);
+  if (!mode || !mode.available) state.mode = i.capabilities.dense ? "hybrid_rrf" : "bm25";
+  if (state.view === "compare" && i.compare_modes.length < 2) state.view = "single";
+  $(`input[value="${state.view}"]`).checked = true;
+  renderStatus(); renderTabs(); render();
+  if (state.q) { $("#q").value = state.q; run(); } else $("#q").focus();
+})();
+</script>
+</body>
+</html>

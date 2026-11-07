@@ -1,0 +1,68 @@
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ML models and weights
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.onnx
+*.joblib
+*.pkl
+
+# Model caches
+.cache/
+.cache/huggingface/
+huggingface_cache/
+torch_cache/
+
+# Downloaded datasets
+datasets/
+data/raw/
+data/processed/
+corpus/
+*.parquet
+
+# Generated embeddings and indexes
+embeddings/
+vector_index/
+*.faiss
+*.index
+
+# Experiment outputs
+results/
+reports/generated/
+*.log
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
